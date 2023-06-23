@@ -1,55 +1,151 @@
-import { ConnectWallet } from "@thirdweb-dev/react";
 import type { NextPage } from "next";
 import styles from "../styles/Home.module.css";
+import { MediaRenderer, Web3Button, useActiveClaimConditionForWallet, useAddress, useClaimIneligibilityReasons, useContract, useContractMetadata, useTotalCirculatingSupply, useTotalCount } from "@thirdweb-dev/react";
+import { CONTRACT_ADDRESS } from "../const/addresses";
+import { ethers } from "ethers";
+import { useState } from "react";
+
+
 
 const Home: NextPage = () => {
+  const address = useAddress();
+
+  const {
+    contract
+  } = useContract(CONTRACT_ADDRESS);
+
+  const {
+    data: contractMetadata,
+    isLoading: isContractMetadataLoading,
+  } = useContractMetadata(contract);
+
+  const {
+    data: activeClaimPhase,
+    isLoading: isActiveClaimPhaseLoading,
+  } = useActiveClaimConditionForWallet(contract, address);
+
+  const {
+    data: totalSupply,
+    isLoading: isTotalSupplyLoading,
+  } = useTotalCount(contract);
+
+  const {
+    data: totalClaimed,
+    isLoading: isTotalClaimedLoading, 
+  } = useTotalCirculatingSupply(contract);
+
+  const maxClaimable = parseInt(activeClaimPhase?.maxClaimablePerWallet || "0");
+
+  const [claimQuantity, setClaimQuantity] = useState(1);
+  const increment = () => {
+    if (claimQuantity < maxClaimable) {
+      setClaimQuantity(claimQuantity + 1);
+    }
+  };
+  const decrement = () => {
+    if (claimQuantity > 1) {
+      setClaimQuantity(claimQuantity - 1);
+    }
+  };
+
+  const {
+    data: claimIneleigibility,
+    isLoading: isClaimIneleigibilityLoading,
+  } = useClaimIneligibilityReasons(
+    contract,
+    {
+      walletAddress: address || "",
+      quantity: claimQuantity,
+    }
+  )
+
   return (
     <div className={styles.container}>
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="http://thirdweb.com/">thirdweb</a>!
-        </h1>
+      <div className={styles.main}>
+        {!isContractMetadataLoading && (
+          <div className={styles.heroSection}>
+            <div className={styles.collectionImage}>
+              <MediaRenderer
+                src={contractMetadata?.image}
+              />
+            </div>
 
-        <p className={styles.description}>
-          Get started by configuring your desired network in{" "}
-          <code className={styles.code}>pages/_app.tsx</code>, then modify the{" "}
-          <code className={styles.code}>pages/index.tsx</code> file!
-        </p>
+            <div>
+            <h1>{contractMetadata.name}</h1>
+              <p>{contractMetadata.description}</p>
+              {!isActiveClaimPhaseLoading ? (
+                <div>
+                  <p>Claim Phase: {activeClaimPhase?.metadata?.name}</p>
+                  <p>Price: {ethers.utils.formatUnits(activeClaimPhase?.price!)}</p>
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+              {!isTotalSupplyLoading && !isTotalClaimedLoading ? (
+                <p>Claimed: {totalClaimed?.toNumber()} / {totalSupply?.toNumber()}</p>
+              ) : (
+                <p>Loading...</p>
+              )}
+              
+              {address ? (
+                !isClaimIneleigibilityLoading ? (
+                  claimIneleigibility?.length! > 0 ? (
+                    claimIneleigibility?.map((reason, index) => (
+                      <p key={index}>{reason}</p>
+                    ))
+                  ) : (
+                    <div>
+                      <p>You are eligible to mint {'max ${maxClaimable}'}</p>
+                      <div className={styles.claimContainer}>
+                        <div className={styles.claimValue}>
+                          <button className={styles.claimBtn}
+                            onClick={decrement}>
+                              -
+                          </button>
+                            
+                          <input className={styles.claimInput} 
+                            type="number" 
+                            value={claimQuantity} 
+                          />
 
-        <div className={styles.connect}>
-          <ConnectWallet />
-        </div>
+                          <button className={styles.claimBtn}
+                            onClick={increment}>
+                            +
+                          </button>
 
-        <div className={styles.grid}>
-          <a href="https://portal.thirdweb.com/" className={styles.card}>
-            <h2>Portal &rarr;</h2>
-            <p>
-              Guides, references and resources that will help you build with
-              thirdweb.
-            </p>
-          </a>
+                        </div>
 
-          <a href="https://thirdweb.com/dashboard" className={styles.card}>
-            <h2>Dashboard &rarr;</h2>
-            <p>
-              Deploy, configure and manage your smart contracts from the
-              dashboard.
-            </p>
-          </a>
+                        <Web3Button
+                        contractAddress={CONTRACT_ADDRESS}
+                        action={(contract) => contract.erc721.claim(claimQuantity)}
+                        >Mint NFT
+                        </Web3Button>
 
-          <a
-            href="https://portal.thirdweb.com/templates"
-            className={styles.card}
-          >
-            <h2>Templates &rarr;</h2>
-            <p>
-              Discover and clone template projects showcasing thirdweb features.
-            </p>
-          </a>
-        </div>
-      </main>
+                      </div>
+                      
+                    </div>
+                  )
+                
+                
+              ) : (
+                  <p>Loading...</p>
+              )
+        ) : (
+                  <p>Connect your wallet to mint</p>
+              )}
+
+            </div>
+
+          </div>
+
+          
+
+        )}
+      </div>
     </div>
   );
 };
+
+
 
 export default Home;
