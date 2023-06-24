@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MediaRenderer, ConnectWallet, useAddress } from "@thirdweb-dev/react";
+import { ConnectWallet, useAddress } from "@thirdweb-dev/react";
 import styles from "../styles/Home.module.css";
 
 export default function Navbar() {
