@@ -7,6 +7,7 @@ import { useState } from "react";
 
 
 
+
 const Home: NextPage = () => {
   const address = useAddress();
 
@@ -62,6 +63,14 @@ const Home: NextPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.main}>
+        <div className={styles.heroIntro}>
+          <div>
+            <h1>Crypto art for non-profit</h1>
+            </div>
+            <div>
+            <h1>Crypto art for non-profit</h1>
+            </div>
+        </div>
         {!isContractMetadataLoading && (
           <div className={styles.heroSection}>
             <div className={styles.collectionImage}>
